@@ -2,25 +2,53 @@
 // config/constants.php
 // Proje genel sabitleri
 
-require_once __DIR__ . '/config.php';
-
+// ================================
+// APP
+// ================================
 define('APP_NAME', 'FEEDLEARN');
 
-// Basit rol tanımı
+// Base URL (htdocs altındaki klasör adı)
+// http://localhost/feedlearn
+define('BASE_URL', '/feedlearn');
+
+// ================================
+// ROLES
+// ================================
 define('ROLE_STUDENT', 'user');
 define('ROLE_ADMIN', 'admin');
 
-// OpenAI API key (load from environment or set manually).
-$openaiKeyEnv = $_ENV['OPENAI_API_KEY'] ?? getenv('OPENAI_API_KEY') ?? '';
-define('OPENAI_API_KEY', is_string($openaiKeyEnv) ? $openaiKeyEnv : '');
+// ================================
+// DEBUG
+// ================================
+$appDebugEnv = getenv('APP_DEBUG') ?: '';
+define(
+    'APP_DEBUG',
+    $appDebugEnv === '1' || strtolower($appDebugEnv) === 'true'
+);
 
-// Debug flag (set APP_DEBUG=1 or true in environment).
-$appDebugEnv = $_ENV['APP_DEBUG'] ?? getenv('APP_DEBUG') ?? '';
-define('APP_DEBUG', $appDebugEnv === '1' || strtolower($appDebugEnv) === 'true');
+// ================================
+// OPENAI
+// ================================
+$openaiKey = getenv('OPENAI_API_KEY');
 
-// Basit yönlendirme yardımcıları
-function redirect($path) {
-    header("Location: " . BASE_URL . $path);
+// Eğer environment yoksa manuel fallback (geliştirme için)
+if (!$openaiKey) {
+    // ❗ prod'da BURAYA KEY KOYMA
+    $openaiKey = '';
+}
+
+define('GEMINI_API_KEY', 'AIzaSyA-RX03Em3OoWDjhupUHEQepd6R_OYW0uU'); 
+
+// ================================
+// HELPERS
+// ================================
+function redirect(string $path): void
+{
+    // /dashboard.php gibi gelirse düzgün birleştir
+    if ($path && $path[0] !== '/') {
+        $path = '/' . $path;
+    }
+
+    header('Location: ' . BASE_URL . $path);
     exit;
 }
-?>
