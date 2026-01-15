@@ -1,45 +1,54 @@
 <?php
 function handle_writing_api()
 {
-    $uploadsDir = __DIR__ . '/../public/uploads/writing';
-    if (!is_dir($uploadsDir)) {
-        mkdir($uploadsDir, 0777, true);
-    }
+    require_once __DIR__ . '/../config/constants.php';
+    require_once __DIR__ . '/../config/db.php';
+    require_once __DIR__ . '/../config/auth.php';
+    require_once __DIR__ . '/evaluator.php';
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        // Accept file upload or JSON body with 'text' and optional 'user_id'
-        if (!empty($_FILES['file']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
-            $orig = basename($_FILES['file']['name']);
-            $target = $uploadsDir . '/' . uniqid('writing_', true) . '_' . $orig;
-            if (move_uploaded_file($_FILES['file']['tmp_name'], $target)) {
-                echo json_encode(['success' => true, 'path' => str_replace(__DIR__ . '/..', '', $target)]);
-                return;
-            }
-            echo json_encode(['success' => false, 'error' => 'file_move_failed']);
-            return;
-        }
+    header('Content-Type: application/json; charset=utf-8');
 
-        $body = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        if (!empty($body['text'])) {
-            $filename = $uploadsDir . '/' . uniqid('writing_', true) . '.txt';
-            if (file_put_contents($filename, $body['text']) !== false) {
-                echo json_encode(['success' => true, 'path' => str_replace(__DIR__ . '/..', '', $filename)]);
-                return;
-            }
-            echo json_encode(['success' => false, 'error' => 'save_failed']);
-            return;
-        }
-
-        echo json_encode(['success' => false, 'error' => 'no_input_provided']);
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        echo json_encode([
+            'ok' => false,
+            'error' => 'METHOD_NOT_ALLOWED'
+        ]);
         return;
     }
 
-    // GET -> list recent submissions
-    $files = glob($uploadsDir . '/*');
-    rsort($files);
-    $out = [];
-    foreach (array_slice($files, 0, 50) as $f) {
-        $out[] = ['file' => str_replace(__DIR__ . '/..', '', $f), 'mtime' => filemtime($f)];
+    $user = current_user();
+    if (!$user) {
+        echo json_encode([
+            'ok' => false,
+            'error' => 'UNAUTHORIZED'
+        ]);
+        return;
     }
-    echo json_encode(['success' => true, 'submissions' => $out]);
+
+    // Text al (form veya JSON body)
+    $body = json_decode(file_get_contents('php://input'), true);
+    $text = $body['text'] ?? $_POST['text'] ?? '';
+
+    if (trim($text) === '') {
+        echo json_encode([
+            'ok' => false,
+            'error' => 'EMPTY_TEXT'
+        ]);
+        return;
+    }
+
+    // 🔥 GERÇEK AI DEĞERLENDİRME
+    $result = evaluate_writing($text);
+
+    echo json_encode([
+        'ok' => true,
+        'data' => [
+            'score' => $result['score_percent'],
+            'cefr_level' => $result['cefr'],
+            'weak_topics' => $result['weak_topics'],
+            'feedback' => $result['feedback']
+        ],
+        'error' => null
+    ]);
 }
+handle_writing_api();

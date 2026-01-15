@@ -180,22 +180,24 @@ function db_init_schema(PDO $pdo): void {
 // Kullaniciyi veritabanina kaydetme.
 function db_create_user($email, $passwordHash, $role = 'user') {
     $pdo = db_connect();
+
     try {
         $stmt = $pdo->prepare(
             'INSERT INTO users (email, password_hash, role, created_at)
              VALUES (:email, :password_hash, :role, :created_at)'
         );
+
         return $stmt->execute([
             'email' => $email,
             'password_hash' => $passwordHash,
             'role' => $role,
             'created_at' => date('c')
         ]);
+
     } catch (PDOException $e) {
-        return false;
+        die('DB ERROR: ' . $e->getMessage());
     }
 }
-
 // Kullaniciyi bulma.
 function db_find_user_by_email($email) {
     $pdo = db_connect();
