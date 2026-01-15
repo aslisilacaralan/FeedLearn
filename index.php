@@ -1,7 +1,6 @@
 <?php
 // index.php
-require_once __DIR__ . '/config/auth.php';
-require_once __DIR__ . '/config/constants.php';
+require_once __DIR__ . '/auth/_guard.php';
 
 // Eğer giriş yaptıysa dashboard, değilse login
 if (current_user()) {

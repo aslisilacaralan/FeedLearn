@@ -4,7 +4,7 @@ require_once __DIR__ . '/_admin_guard.php';
 $logs = $_SESSION['usage_logs'] ?? [];
 usort($logs, fn($a,$b) => strtotime($b['created_at']) <=> strtotime($a['created_at']));
 
-include __DIR__ . '/../templates/header.php';
+require_once __DIR__ . '/../templates/header.php';
 ?>
 
 <h2>Admin – Usage Report</h2>
@@ -33,4 +33,4 @@ include __DIR__ . '/../templates/header.php';
   </table>
 <?php endif; ?>
 
-<?php include __DIR__ . '/../templates/footer.php'; ?>
+<?php require_once __DIR__ . '/../templates/footer.php'; ?>

@@ -1,9 +1,12 @@
 <?php
-require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/auth/_guard.php';
 require_once __DIR__ . '/config/constants.php';
+require_once __DIR__ . '/config/db.php';
 require_login();
 
-include __DIR__ . '/templates/header.php';
+$activities = db_get_activities();
+
+require_once __DIR__ . '/templates/header.php';
 ?>
 
 <div class="section card">
@@ -15,25 +18,34 @@ include __DIR__ . '/templates/header.php';
   <h3>Activity Selection</h3>
   <p class="muted">Choose an activity to start.</p>
 
-  <div class="grid">
+  <?php if (!count($activities)): ?>
     <div class="card">
-      <div class="card-title">Quiz</div>
-      <div class="card-desc">Measure grammar & vocabulary with multiple-choice questions.</div>
-      <a class="btn btn-primary" href="<?php echo BASE_URL; ?>/activity/quiz.php">Start Quiz</a>
+      <p class="muted">No activities available yet.</p>
     </div>
-
-    <div class="card">
-      <div class="card-title">Writing</div>
-      <div class="card-desc">Write a short text and get automated feedback.</div>
-      <a class="btn btn-primary" href="<?php echo BASE_URL; ?>/activity/writing.php">Start Writing</a>
+  <?php else: ?>
+    <div class="grid">
+      <?php foreach ($activities as $activity): ?>
+        <?php
+          $type = $activity['activity_type'] ?? '';
+          $title = $activity['title'] ?? '';
+          $description = $activity['description'] ?? '';
+          $enabled = (int)($activity['is_enabled'] ?? 0) === 1;
+          $activityId = (int)($activity['id'] ?? 0);
+          $link = BASE_URL . '/activity/' . $type . '.php?activity_id=' . $activityId;
+          $label = ucfirst($type);
+        ?>
+        <div class="card">
+          <div class="card-title"><?php echo htmlspecialchars($title); ?></div>
+          <div class="card-desc"><?php echo htmlspecialchars($description); ?></div>
+          <?php if ($enabled): ?>
+            <a class="btn btn-primary" href="<?php echo htmlspecialchars($link); ?>">Start <?php echo htmlspecialchars($label); ?></a>
+          <?php else: ?>
+            <span class="btn" aria-disabled="true" style="opacity:0.6; cursor:not-allowed;">Yakında</span>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
     </div>
-
-    <div class="card">
-      <div class="card-title">Speaking</div>
-      <div class="card-desc">Upload an audio file and receive basic speaking feedback.</div>
-      <a class="btn btn-primary" href="<?php echo BASE_URL; ?>/activity/speaking.php">Start Speaking</a>
-    </div>
-  </div>
+  <?php endif; ?>
 </section>
 
 <section class="section">
@@ -73,4 +85,4 @@ include __DIR__ . '/templates/header.php';
 </section>
 <?php endif; ?>
 
-<?php include __DIR__ . '/templates/footer.php'; ?>
+<?php require_once __DIR__ . '/templates/footer.php'; ?>

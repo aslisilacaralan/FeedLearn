@@ -7,56 +7,81 @@ $errors = [];
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name  = trim($_POST['name'] ?? '');
+    $csrf  = $_POST['csrf_token'] ?? '';
     $email = trim($_POST['email'] ?? '');
     $pass  = $_POST['password'] ?? '';
 
-    // Basit validasyon (FR19 erişilebilir hata mesajı için net yaz)
-    if ($name === '') $errors[] = 'Ad Soyad zorunludur.';
+    if (!csrf_validate($csrf)) $errors[] = 'Oturum doğrulama hatası. Lütfen sayfayı yenileyip tekrar deneyin.';
     if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Geçerli e-posta giriniz.';
     if (strlen($pass) < 6) $errors[] = 'Şifre en az 6 karakter olmalıdır.';
 
     if (!$errors) {
-        $hash = password_hash($pass, PASSWORD_DEFAULT);
+        if (db_find_user_by_email($email)) {
+            $errors[] = 'Bu e-posta zaten kayıtlı.';
+        } else {
+            $hash = password_hash($pass, PASSWORD_DEFAULT);
 
-        // DB kayıt (mock)
-        db_create_user($name, $email, $hash, ROLE_STUDENT);
-
-        $success = "Kayıt başarılı. Giriş yapabilirsiniz.";
+            if (!db_create_user($email, $hash, ROLE_STUDENT)) {
+                $errors[] = 'Kayıt oluşturulamadı. Lütfen tekrar deneyin.';
+            } else {
+                $success = "Kayıt başarılı. Şimdi giriş yapabilirsin.";
+            }
+        }
     }
 }
+
+require_once __DIR__ . '/../templates/header.php';
 ?>
 
-<?php include __DIR__ . '/../templates/header.php'; ?>
+<section class="section">
+  <div class="card" style="max-width:520px; margin:0 auto;">
+    <h2>Kayıt Ol</h2>
+    <p class="muted">Yeni bir hesap oluştur.</p>
 
-<h2>Kayıt Ol</h2>
+    <?php if ($success): ?>
+      <p class="success" role="status" aria-live="polite"><?php echo htmlspecialchars($success); ?></p>
+      <a class="btn btn-primary" href="<?php echo BASE_URL; ?>/auth/login.php">Girişe Git</a>
+      <hr style="border:none; border-top:1px solid #eee; margin:14px 0;">
+    <?php endif; ?>
 
-<?php if ($success): ?>
-  <p style="color:green;"><?php echo $success; ?></p>
-  <a href="<?php echo BASE_URL; ?>/auth/login.php">Girişe git</a>
-<?php endif; ?>
+    <?php if ($errors): ?>
+      <div class="error" role="alert" aria-live="polite" style="margin:10px 0;">
+        <ul class="list">
+          <?php foreach ($errors as $e): ?>
+            <li><?php echo htmlspecialchars($e); ?></li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
+    <?php endif; ?>
 
-<?php if ($errors): ?>
-  <ul style="color:red;">
-    <?php foreach ($errors as $e): ?>
-      <li><?php echo htmlspecialchars($e); ?></li>
-    <?php endforeach; ?>
-  </ul>
-<?php endif; ?>
+    <form method="POST" aria-label="Kayıt formu">
+      <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(csrf_token()); ?>">
 
-<form method="POST" aria-label="Kayıt formu">
-  <label>Ad Soyad</label><br/>
-  <input name="name" type="text" value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>" /><br/><br/>
+      <label for="email">E-posta</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        autocomplete="email"
+        required
+        value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
+      />
 
-  <label>E-posta</label><br/>
-  <input name="email" type="email" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" /><br/><br/>
+      <label for="password">Şifre</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autocomplete="new-password"
+        required
+      />
 
-  <label>Şifre</label><br/>
-  <input name="password" type="password" /><br/><br/>
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="submit" class="btn btn-primary">Kayıt Ol</button>
+        <a class="btn" href="<?php echo BASE_URL; ?>/auth/login.php">Giriş Yap</a>
+      </div>
+    </form>
+  </div>
+</section>
 
-  <button type="submit">Kayıt Ol</button>
-</form>
-
-<p>Hesabın var mı? <a href="<?php echo BASE_URL; ?>/auth/login.php">Giriş Yap</a></p>
-
-<?php include __DIR__ . '/../templates/footer.php'; ?>
+<?php require_once __DIR__ . '/../templates/footer.php'; ?>
