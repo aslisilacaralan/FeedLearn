@@ -1,0 +1,17 @@
+{
+  "title": "Sample Quiz",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "What is the capital of France?",
+      "options": ["Paris", "Berlin", "Rome", "Madrid"],
+      "correct": 0
+    },
+    {
+      "id": "q2",
+      "question": "2 + 2 = ?",
+      "options": ["3", "4", "5", "22"],
+      "correct": 1
+    }
+  ]
+}

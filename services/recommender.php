@@ -37,9 +37,9 @@ function recommend_next_activity(array $performanceHistory) {
 }
 ?>
 <?php
-require_once __DIR__ . '/config/auth.php';
-require_once __DIR__ . '/config/constants.php';
-require_once __DIR__ . '/services/recommender.php';
+require_once __DIR__ . '/../auth/_guard.php';
+require_once __DIR__ . '/../config/constants.php';
+require_once __DIR__ . '/recommender.php';
 require_login();
 
 $user = current_user();
@@ -54,7 +54,7 @@ $linkMap = [
   'speaking' => BASE_URL . '/activity/speaking.php'
 ];
 
-include __DIR__ . '/templates/header.php';
+require_once __DIR__ . '/../templates/header.php';
 ?>
 
 <h2>Recommended Next Activity</h2>
@@ -65,5 +65,5 @@ include __DIR__ . '/templates/header.php';
   Start Recommended Activity
 </a>
 
-<?php include __DIR__ . '/templates/footer.php'; ?>
+<?php require_once __DIR__ . '/../templates/footer.php'; ?>
 

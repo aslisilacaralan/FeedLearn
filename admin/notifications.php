@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['notification_defaults'] = $defaults;
 }
 
-include __DIR__ . '/../templates/header.php';
+require_once __DIR__ . '/../templates/header.php';
 ?>
 
 <h2>Admin – Notification Preferences</h2>
@@ -30,4 +30,4 @@ include __DIR__ . '/../templates/header.php';
   <button type="submit">Save Defaults</button>
 </form>
 
-<?php include __DIR__ . '/../templates/footer.php'; ?>
+<?php require_once __DIR__ . '/../templates/footer.php'; ?>

@@ -11,22 +11,29 @@ function current_user() {
 }
 
 function login_user(array $user) {
-    // Session fixation koruması (iyi görünür raporda da)
+    // Session fixation protection.
     session_regenerate_id(true);
+
+    $email = $user['email'] ?? '';
+    $name = $user['name'] ?? '';
+    if ($name === '' && $email !== '') {
+        $name = explode('@', $email)[0] ?? $email;
+    }
 
     $_SESSION['user'] = [
         'id' => $user['id'] ?? null,
-        'name' => $user['name'] ?? '',
-        'email' => $user['email'] ?? '',
+        'user_id' => $user['id'] ?? null,
+        'name' => $name,
+        'email' => $email,
         'role' => $user['role'] ?? ROLE_STUDENT
     ];
 }
 
 function logout_user() {
-    // Session verisini temizle
+    // Clear session data.
     $_SESSION = [];
 
-    // Cookie de temizle (bazı hataları çözer)
+    // Clear session cookie too.
     if (ini_get("session.use_cookies")) {
         $params = session_get_cookie_params();
         setcookie(session_name(), '', time() - 42000,
@@ -38,9 +45,21 @@ function logout_user() {
     session_destroy();
 }
 
-function require_login() {
-    if (!current_user()) {
-        redirect('/auth/login.php');
+function csrf_token(): string {
+    if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
+    return $_SESSION['csrf_token'];
+}
+
+function csrf_validate($token): bool {
+    if (!is_string($token) || $token === '') {
+        return false;
+    }
+    $sessionToken = $_SESSION['csrf_token'] ?? '';
+    if (!is_string($sessionToken) || $sessionToken === '') {
+        return false;
+    }
+    return hash_equals($sessionToken, $token);
 }
 ?>
