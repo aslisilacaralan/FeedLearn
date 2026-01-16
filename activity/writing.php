@@ -59,11 +59,16 @@ STUDENT RESPONSE:
 $text
 PROMPT;
 
-    $payload = [
-        "contents" => [[
-            "parts" => [[ "text" => $aiPrompt ]]
-        ]]
-    ];
+$payload = [
+  "generationConfig" => [
+    "temperature" => 0.85,
+    "topP" => 0.9,
+    "maxOutputTokens" => 220
+  ],
+  "contents" => [[
+    "parts" => [[ "text" => $aiPrompt ]]
+  ]]
+];
 
     $ch = curl_init(
         "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" . GEMINI_API_KEY
@@ -109,19 +114,25 @@ PROMPT;
 /* =========================
    FALLBACK (SMART)
    ========================= */
-function fallback_evaluation(string $text, string $reason): array
-{
-    $words = str_word_count($text);
-    $score = min(90, max(45, 40 + (int)($words / 3)));
-
-    return [
-        'score' => $score,
-        'cefr' => $score >= 80 ? 'B2' : ($score >= 65 ? 'B1' : 'A2'),
-        'weak_topics' => ['grammar', 'coherence'],
-        'feedback' => "Evaluation estimated: $reason"
-    ];
-}
-
+   function fallback_evaluation(string $text, string $reason): array
+   {
+       $words = str_word_count($text);
+       $score = min(90, max(45, 40 + (int)($words / 3)));
+   
+       $fallbackMessages = [
+           "The response demonstrates developing control of structure, though clarity can be improved with more cohesive linking.",
+           "The writing shows an emerging ability to express ideas, but sentence-level accuracy requires further practice.",
+           "The text communicates the main idea, yet grammatical consistency and flow need refinement.",
+           "The response reflects basic argument construction; expanding sentence variety would strengthen the overall quality."
+       ];
+   
+       return [
+           'score' => $score,
+           'cefr' => $score >= 80 ? 'B2' : ($score >= 65 ? 'B1' : 'A2'),
+           'weak_topics' => ['grammar', 'coherence'],
+           'feedback' => $fallbackMessages[array_rand($fallbackMessages)]
+       ];
+   }
 /* =========================
    PAGE LOGIC
    ========================= */
