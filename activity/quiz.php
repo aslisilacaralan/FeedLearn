@@ -85,6 +85,8 @@ function quiz_feedback_ai_assisted(
     $topics = $weak ? implode(', ', $weak) : 'overall accuracy';
 
     /* ---------- TRY GEMINI (IF AVAILABLE) ---------- */
+    require_once __DIR__ . '/../services/gemini_client.php';
+    
     if (defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') {
 
         $prompt = <<<PROMPT
@@ -104,36 +106,17 @@ Do not use bullet points.
 Return plain text only.
 PROMPT;
 
-        $payload = [
-            "contents" => [[
-                "parts" => [[ "text" => $prompt ]]
-            ]]
-        ];
-
-        $ch = curl_init(
-            "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" . GEMINI_API_KEY
-        );
-
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-            CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_TIMEOUT => 20
-        ]);
-
-        $res = curl_exec($ch);
-        curl_close($ch);
-
-        if ($res) {
-            $json = json_decode($res, true);
-            $text =
-                $json['candidates'][0]['content']['parts'][0]['text']
-                ?? '';
-
-            if (trim($text) !== '') {
-                return trim($text); // ✅ GERÇEK AI
+        try {
+            $text = gemini_generate_text($prompt, [
+                'temperature' => 0.7,
+                'maxOutputTokens' => 100
+            ]);
+            
+            if ($text) {
+                return $text;
             }
+        } catch (Exception $e) {
+            // Fallback to rules if AI fails
         }
     }
 

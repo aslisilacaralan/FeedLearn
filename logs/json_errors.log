@@ -1,0 +1,14 @@
+[2026-01-16 17:45:37] JSON ERROR: Control character error, possibly incorrectly encoded
+RAW: {"score_percent": 90, "cefr": "B2", "weak_topics": ["Cümle Yapısı Ç...
+CLEANED: {"score_percent": 90, "cefr": "B2", "weak_topics": ["Cümle Yapısı Ç
+--------------------------------------------------
+[2026-01-16 17:45:47] JSON ERROR: Control character error, possibly incorrectly encoded
+RAW: {"score_percent":92,"cefr":"B2","weak_topics":["Vocabulary Variety","Complex Sentence Structures"],"feedback":"Y...
+CLEANED: {"score_percent":92,"cefr":"B2","weak_topics":["Vocabulary Variety","Complex Sentence Structures"],"feedback":"Y
+--------------------------------------------------
+[2026-01-16 17:51:44] JSON ERROR: Control character error, possibly incorrectly encoded
+RAW (Length: 213): {"score_percent": 88, "cefr": "B2", "weak_topics": ["Proofreading", "Article Usage"], "feedback": "Yazı genel olarak çok iyi. Fikirler açıkça ifade edilmiş ve kelime dağarcığı yeterli. Ancak, ilk kelimed
+--------------------------------------------------
+[2026-01-16 17:52:30] JSON ERROR: Control character error, possibly incorrectly encoded
+RAW (Length: 69): {"score_percent": 88, "cefr": "B2", "weak_topics": ["Proofreading", "
+--------------------------------------------------
