@@ -1,126 +1,14 @@
 <?php
+// activity/writing.php
+
 require_once __DIR__ . '/../auth/_guard.php';
 require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../config/db.php';
+
+// DİKKAT: Eski 'grammar_evaluator.php' DEĞİL, yeni yazdığımız evaluator'ı çağırıyoruz.
+require_once __DIR__ . '/../services/evaluator.php'; 
+
 require_login();
-
-/* =========================
-   GEMINI AI FUNCTION
-   ========================= */
-function evaluate_writing_with_gemini(string $prompt, string $text): array
-{
-    if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
-        return [
-            'score' => 60,
-            'cefr' => 'B1',
-            'weak_topics' => ['configuration'],
-            'feedback' => 'Gemini API key is missing.'
-        ];
-    }
-
-    $aiPrompt = <<<PROMPT
-SYSTEM INSTRUCTION (STRICT):
-You are a grading engine.
-You MUST output ONLY valid JSON.
-NO explanations.
-NO markdown.
-NO comments.
-NO extra text.
-NO greetings.
-NO prefixes.
-NO suffixes.
-
---------------------------------
-TASK:
-Evaluate the student's English writing.
-
-Rules:
-- Score MUST be between 40 and 95.
-- NEVER return 0.
-- If off-topic, LOWER the score but still evaluate.
-- Be fair, academic, and realistic.
-
---------------------------------
-OUTPUT FORMAT (STRICT JSON ONLY):
-
-{
-  "score": 70,
-  "cefr": "B1",
-  "weak_topics": ["grammar"],
-  "feedback": "Your feedback here."
-}
-
---------------------------------
-WRITING PROMPT:
-$prompt
-
---------------------------------
-STUDENT RESPONSE:
-$text
-PROMPT;
-
-    $payload = [
-        "contents" => [[
-            "parts" => [[ "text" => $aiPrompt ]]
-        ]]
-    ];
-
-    $ch = curl_init(
-        "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" . GEMINI_API_KEY
-    );
-
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_TIMEOUT => 30
-    ]);
-
-    $res = curl_exec($ch);
-    curl_close($ch);
-
-    if (!$res) {
-        return fallback_evaluation($text, 'Gemini API call failed.');
-    }
-
-    $json = json_decode($res, true);
-    $textOut = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
-
-    // JSON ayıklama (çok kritik)
-    if (preg_match('/\{[\s\S]*\}/', $textOut, $m)) {
-        $ai = json_decode($m[0], true);
-    } else {
-        $ai = null;
-    }
-
-    if (!is_array($ai)) {
-        return fallback_evaluation($text, 'AI formatting issue.');
-    }
-
-    return [
-        'score' => max(40, min(95, (int)($ai['score'] ?? 65))),
-        'cefr' => (string)($ai['cefr'] ?? 'B1'),
-        'weak_topics' => is_array($ai['weak_topics'] ?? null) ? $ai['weak_topics'] : ['grammar'],
-        'feedback' => (string)($ai['feedback'] ?? 'AI-generated feedback.')
-    ];
-}
-
-/* =========================
-   FALLBACK (SMART)
-   ========================= */
-function fallback_evaluation(string $text, string $reason): array
-{
-    $words = str_word_count($text);
-    $score = min(90, max(45, 40 + (int)($words / 3)));
-
-    return [
-        'score' => $score,
-        'cefr' => $score >= 80 ? 'B2' : ($score >= 65 ? 'B1' : 'A2'),
-        'weak_topics' => ['grammar', 'coherence'],
-        'feedback' => "Evaluation estimated: $reason"
-    ];
-}
 
 /* =========================
    PAGE LOGIC
@@ -152,31 +40,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors) {
-        $result = evaluate_writing_with_gemini($prompt, $text);
+        try {
+            // YENİ SİSTEM: evaluate_writing() fonksiyonunu çağırıyoruz.
+            // Bu fonksiyon arkada GeminiClient ve gemini-2.5-flash kullanıyor.
+            $result = evaluate_writing($text);
 
-        $evalId = db_create_evaluation(
-            current_user()['id'],
-            $activityId,
-            $result['score'],
-            $result['cefr'],
-            $result['feedback'],
-            $result['weak_topics'],
-            'Text',
-            json_encode(['prompt' => $prompt, 'text' => $text])
-        );
-
-        if ($evalId) {
-            db_create_ai_log(
+            // Gelen sonucu veritabanına uygun hale getiriyoruz
+            $feedbackStr = $result['feedback']; 
+            $weakTopics = $result['weak_topics'] ?? [];
+            
+            // Veritabanına kaydet
+            $evalId = db_create_evaluation(
                 current_user()['id'],
-                'writing',
-                $prompt,
-                $result['feedback']
+                $activityId,
+                $result['score_percent'], // Gemini'den gelen yüzdelik puan
+                $result['cefr'],          // Seviye (A2, B1 vs)
+                $feedbackStr,             // Öğretmen yorumu
+                $weakTopics,
+                'Text',
+                json_encode(['prompt' => $prompt, 'text' => $text])
             );
 
-            unset($_SESSION['writing_prompt']);
-            redirect('/results/feedback.php?id=' . $evalId);
-        } else {
-            $errors[] = 'Failed to save evaluation.';
+            if ($evalId) {
+                // Log kaydı
+                db_create_ai_log(
+                    current_user()['id'],
+                    'writing',
+                    $prompt,
+                    $feedbackStr
+                );
+
+                unset($_SESSION['writing_prompt']);
+                redirect('/results/feedback.php?id=' . $evalId);
+            } else {
+                $errors[] = 'Failed to save evaluation.';
+            }
+
+        } catch (Exception $e) {
+            $errors[] = "Evaluation Failed: " . $e->getMessage();
         }
     }
 }
@@ -206,7 +107,7 @@ require_once __DIR__ . '/../templates/header.php';
 <section class="section">
   <form method="POST" class="card">
     <label>Your Answer</label>
-    <textarea name="writing_text" required rows="8"><?= htmlspecialchars($textValue) ?></textarea>
+    <textarea name="writing_text" required rows="8" placeholder="Write your essay here..."><?= htmlspecialchars($textValue) ?></textarea>
     <button type="submit" class="btn btn-primary">Submit Writing</button>
     <a href="<?= BASE_URL ?>/dashboard.php" class="btn">Back</a>
   </form>

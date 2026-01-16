@@ -32,7 +32,34 @@ function handle_quiz_api()
                 $score++;
             }
         }
-        echo json_encode(['success' => true, 'score' => $score, 'total' => $total]);
+
+        // Generate AI Feedback via Gemini
+        require_once __DIR__ . '/gemini_client.php';
+        
+        $percentage = ($total > 0) ? round(($score / $total) * 100) : 0;
+        
+        // Contextual prompt
+        $prompt = "You are a teacher evaluating a quiz student.
+        The student scored $score out of $total ($percentage%).
+        
+        Provide a short, encouraging feedback message (max 2 sentences).
+        If the score is low, suggest reviewing the material.
+        If the score is high, congratulate them.
+        
+        Output valid JSON: { \"feedback\": \"...\" }";
+
+        $feedback = "Good job!"; // Default fallback
+        
+        try {
+            $aiResult = gemini_generate_json($prompt, ['temperature' => 0.7]);
+            if (!empty($aiResult['feedback'])) {
+                $feedback = $aiResult['feedback'];
+            }
+        } catch (Exception $e) {
+            // Silently fail to default feedback if AI fails, to not block the user
+        }
+
+        echo json_encode(['success' => true, 'score' => $score, 'total' => $total, 'feedback' => $feedback]);
         return;
     }
 
