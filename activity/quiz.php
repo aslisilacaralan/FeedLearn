@@ -1,200 +1,225 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/../auth/_guard.php';
 require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../services/evaluator.php';
 require_login();
 
-$activityType = 'quiz';
-$activityId = isset($_GET['activity_id']) ? (int)$_GET['activity_id'] : 0;
-$activity = null;
-if ($activityId > 0) {
-    $activity = db_get_activity_by_id($activityId);
-    if ($activity && ($activity['activity_type'] ?? '') !== $activityType) {
-        $activity = null;
-    }
-}
-if (!$activity) {
-    $activity = db_get_activity_by_type($activityType);
-}
-$activityId = (int)($activity['id'] ?? $activityId);
-$activityTitle = $activity['title'] ?? 'Quiz Activity';
-$activityDescription = $activity['description'] ?? 'Answer the questions and submit to get automated feedback.';
-$activityEnabled = (int)($activity['is_enabled'] ?? 1) === 1;
+/* =====================================================
+   QUIZ QUESTIONS (10 ADET – TEKRARSIZ)
+   ===================================================== */
+$questions = [
+  ['id'=>1,'q'=>'Choose the correct sentence:','o'=>['He go to school.','He goes to school.','He going to school.'],'c'=>1,'t'=>'grammar'],
+  ['id'=>2,'q'=>'Choose the correct sentence:','o'=>['They is happy.','They are happy.','They be happy.'],'c'=>1,'t'=>'grammar'],
+  ['id'=>3,'q'=>'Select the correct preposition:','o'=>['in','on','at'],'c'=>2,'t'=>'prepositions'],
+  ['id'=>4,'q'=>'Choose the correct article:','o'=>['a apple','an apple','the apple'],'c'=>1,'t'=>'articles'],
+  ['id'=>5,'q'=>'Choose the correct tense:','o'=>['I have see it.','I saw it.','I have saw it.'],'c'=>1,'t'=>'tenses'],
+  ['id'=>6,'q'=>'Choose the correct word:','o'=>['much people','many people','little people'],'c'=>1,'t'=>'vocabulary'],
+  ['id'=>7,'q'=>'Choose the correct sentence:','o'=>['She don’t like tea.','She doesn’t like tea.','She didn’t likes tea.'],'c'=>1,'t'=>'grammar'],
+  ['id'=>8,'q'=>'Choose the correct form:','o'=>['There is many cars.','There are many cars.','There be many cars.'],'c'=>1,'t'=>'grammar'],
+  ['id'=>9,'q'=>'Choose the correct article:','o'=>['a university','an university','the university'],'c'=>0,'t'=>'articles'],
+  ['id'=>10,'q'=>'Choose the correct tense:','o'=>['He was go home.','He went home.','He has go home.'],'c'=>1,'t'=>'tenses'],
+];
+
+/* =====================================================
+   ACTIVITY
+   ===================================================== */
+$activity = db_get_activity_by_type('quiz');
+$activityId = (int)($activity['id'] ?? 0);
 $errors = [];
 
-// FR18: start or resume attempt (mock)
-if ($activityEnabled) {
-    if (!isset($_SESSION['attempts'])) $_SESSION['attempts'] = [];
-    $userId = current_user()['id'];
-    $_SESSION['attempts'][$userId][$activityType] = [
-      'status' => 'in_progress',
-      'started_at' => date('c')
+/* =====================================================
+   SCORING (10 soru × 10 puan = 100)
+   ===================================================== */
+function evaluate_quiz(array $questions, array $answers): array {
+    $correct = 0;
+    $weak = [];
+
+    foreach ($questions as $q) {
+        if ((int)$answers[$q['id']] === (int)$q['c']) {
+            $correct++;
+        } else {
+            $weak[] = $q['t'];
+        }
+    }
+
+    $score = $correct * 10;
+
+    if ($score < 40)      $cefr = 'A1';
+    elseif ($score < 55)  $cefr = 'A2';
+    elseif ($score < 70)  $cefr = 'B1';
+    elseif ($score < 85)  $cefr = 'B2';
+    else                  $cefr = 'C1';
+
+    return [
+        'score' => $score,
+        'cefr' => $cefr,
+        'weak_topics' => array_values(array_unique($weak)),
+        'correct' => $correct,
+        'total' => count($questions)
     ];
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$activityEnabled) {
-        $errors[] = 'Bu aktivite şu anda kullanılamıyor.';
-    }
-    if ($activityId <= 0) {
-        $errors[] = 'Aktivite bulunamadı.';
+/* =====================================================
+   🧠 AI-ASSISTED FEEDBACK (STABLE FINAL)
+   ===================================================== */
+function quiz_feedback_ai_assisted(
+    int $score,
+    string $cefr,
+    array $weak,
+    int $correct,
+    int $total
+): string {
+
+    /* ---------- PERFORMANCE BAND ---------- */
+    if ($score >= 85) {
+        $band = 'high';
+    } elseif ($score >= 60) {
+        $band = 'medium';
+    } else {
+        $band = 'low';
     }
 
-    $answers = [];
-    foreach ($_POST as $key => $value) {
-        if (strpos($key, 'q_') === 0) {
-            $qid = substr($key, 2);
-            $answers[$qid] = $value;
-        }
-    }
-    $topics = [];
-    foreach ($_POST as $key => $value) {
-        if (strpos($key, 'topic_') === 0) {
-            $topic = trim((string) $value);
-            if ($topic !== '') {
-                $topics[] = $topic;
+    $topics = $weak ? implode(', ', $weak) : 'overall accuracy';
+
+    /* ---------- TRY GEMINI (IF AVAILABLE) ---------- */
+    if (defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') {
+
+        $prompt = <<<PROMPT
+You are an English instructor.
+
+A student completed a grammar quiz.
+
+Performance level: $band
+CEFR level: $cefr
+Score: $score
+Correct answers: $correct out of $total
+Weak areas: $topics
+
+Write a short academic feedback (2–3 sentences).
+Adapt tone to performance level.
+Do not use bullet points.
+Return plain text only.
+PROMPT;
+
+        $payload = [
+            "contents" => [[
+                "parts" => [[ "text" => $prompt ]]
+            ]]
+        ];
+
+        $ch = curl_init(
+            "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" . GEMINI_API_KEY
+        );
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_TIMEOUT => 20
+        ]);
+
+        $res = curl_exec($ch);
+        curl_close($ch);
+
+        if ($res) {
+            $json = json_decode($res, true);
+            $text =
+                $json['candidates'][0]['content']['parts'][0]['text']
+                ?? '';
+
+            if (trim($text) !== '') {
+                return trim($text); // ✅ GERÇEK AI
             }
         }
     }
-    $topics = array_values(array_unique($topics));
-    $topicSummary = $topics ? implode(', ', $topics) : 'Quiz attempt';
-    if (!$answers) {
-        $errors[] = 'Lütfen tüm soruları yanıtlayın.';
+
+    /* ---------- SMART FALLBACK (AI-ASSISTED) ---------- */
+    if ($band === 'high') {
+        return "Your performance demonstrates strong grammatical awareness and consistent accuracy. To progress further, focus on refining tense usage and expanding sentence variety.";
+    }
+
+    if ($band === 'medium') {
+        return "Your results show a developing understanding of core grammar structures. Reviewing the identified weak areas and practicing similar question types will help improve consistency.";
+    }
+
+    return "This attempt indicates gaps in foundational grammar patterns. Concentrating on basic sentence structures and practicing targeted exercises will support steady improvement.";
+}
+
+/* =====================================================
+   POST
+   ===================================================== */
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $answers = [];
+    foreach ($questions as $q) {
+        if (!isset($_POST['q_'.$q['id']])) {
+            $errors[] = 'Please answer all questions.';
+            break;
+        }
+        $answers[$q['id']] = (int)$_POST['q_'.$q['id']];
     }
 
     if (!$errors) {
-        $result = evaluate_quiz($_POST);
+        $base = evaluate_quiz($questions, $answers);
+
+        $feedback = quiz_feedback_ai_assisted(
+            $base['score'],
+            $base['cefr'],
+            $base['weak_topics'],
+            $base['correct'],
+            $base['total']
+        );
+
         $evalId = db_create_evaluation(
             current_user()['id'],
             $activityId,
-            (int)($result['score_percent'] ?? 0),
-            null,
-            $result['feedback'] ?? null,
-            $result['weak_topics'] ?? [],
+            $base['score'],
+            $base['cefr'],
+            $feedback,
+            $base['weak_topics'],
             'quiz',
             json_encode($answers)
         );
 
-        if ($evalId) {
-            db_create_ai_log(
-                current_user()['id'],
-                'quiz',
-                $topicSummary,
-                $result['feedback'] ?? null
-            );
-            if (!isset($_SESSION['performance'])) {
-                $_SESSION['performance'] = [];
-            }
-            $_SESSION['performance'][] = [
-                'user_id' => current_user()['id'],
-                'score_percent' => (int)($result['score_percent'] ?? 0),
-                'weak_topics' => $result['weak_topics'] ?? [],
-                'created_at' => gmdate('c')
-            ];
-
-            if (!isset($_SESSION['usage_logs'])) {
-                $_SESSION['usage_logs'] = [];
-            }
-            $_SESSION['usage_logs'][] = [
-                'user_id' => current_user()['id'],
-                'action' => 'submit_quiz',
-                'created_at' => gmdate('c')
-            ];
-
-            if (!isset($_SESSION['attempts'])) $_SESSION['attempts'] = [];
-            $_SESSION['attempts'][current_user()['id']][$activityType]['status'] = 'completed';
-            $_SESSION['attempts'][current_user()['id']][$activityType]['completed_at'] = gmdate('c');
-
-            $_SESSION['last_result'] = $result;
-            redirect('/results/feedback.php?id=' . $evalId);
-        } else {
-            $errors[] = 'Değerlendirme kaydedilemedi. Lütfen tekrar deneyin.';
-        }
+        redirect('/results/feedback.php?id=' . $evalId);
     }
 }
-
-// Demo questions (mock)
-$questions = [
-  [
-    'id' => 1,
-    'q' => 'Choose the correct sentence:',
-    'options' => ['He go to school.', 'He goes to school.', 'He going to school.'],
-    'correct' => 1,
-    'topic' => 'Present Simple - 3rd person'
-  ],
-  [
-    'id' => 2,
-    'q' => 'Select the correct preposition for time:',
-    'options' => ['in', 'on', 'at'],
-    'correct' => 2,
-    'topic' => 'Prepositions - time'
-  ],
-];
 
 require_once __DIR__ . '/../templates/header.php';
 ?>
 
 <section class="section">
-  <div class="card">
-    <h2><?php echo htmlspecialchars($activityTitle); ?></h2>
-    <p class="muted"><?php echo htmlspecialchars($activityDescription); ?></p>
-  </div>
-</section>
+<form method="POST" class="card">
+<h2>Quiz Activity</h2>
 
-<?php if ($errors): ?>
-<section class="section">
-  <div class="card">
-    <div class="error" role="alert" aria-live="polite">
-      <ul class="list">
-        <?php foreach ($errors as $error): ?>
-          <li><?php echo htmlspecialchars($error); ?></li>
-        <?php endforeach; ?>
-      </ul>
-    </div>
-  </div>
-</section>
-<?php endif; ?>
+<?php foreach ($questions as $i => $q): ?>
+  <div class="quiz-question">
 
-<?php if (!$activityEnabled): ?>
-<section class="section">
-  <div class="card">
-    <p class="muted">Bu aktivite yakında aktif olacak.</p>
-    <a class="btn" href="<?php echo BASE_URL; ?>/dashboard.php">Back</a>
-  </div>
-</section>
-<?php else: ?>
-<section class="section">
-  <form method="POST" action="<?php echo htmlspecialchars(BASE_URL . '/activity/quiz.php' . ($activityId ? '?activity_id=' . $activityId : '')); ?>" class="card" aria-label="Quiz form">
-    <input type="hidden" name="activity_type" value="quiz">
-    <input type="hidden" name="activity_id" value="<?php echo (int)$activityId; ?>">
+    <p class="quiz-title">
+      <?= ($i+1) ?>. <?= htmlspecialchars($q['q']) ?>
+    </p>
 
-    <?php foreach ($questions as $i => $qq): ?>
-      <div class="card" style="box-shadow:none; border-style:dashed; margin-bottom:12px;">
-        <div class="card-title"><?php echo ($i+1) . ') ' . htmlspecialchars($qq['q']); ?></div>
-
-        <?php foreach ($qq['options'] as $idx => $opt): ?>
-          <label style="font-weight:600; display:flex; gap:8px; align-items:center; margin:8px 0;">
-            <input
-              type="radio"
-              name="q_<?php echo $qq['id']; ?>"
-              value="<?php echo $idx; ?>"
-              required
-              style="width:auto;"
-            >
-            <span><?php echo htmlspecialchars($opt); ?></span>
-          </label>
-        <?php endforeach; ?>
-
-        <input type="hidden" name="topic_<?php echo $qq['id']; ?>" value="<?php echo htmlspecialchars($qq['topic']); ?>">
-        <input type="hidden" name="correct_<?php echo $qq['id']; ?>" value="<?php echo $qq['correct']; ?>">
-      </div>
+    <?php foreach ($q['o'] as $idx => $opt): ?>
+      <label class="quiz-option">
+        <input
+          type="radio"
+          name="q_<?= $q['id'] ?>"
+          value="<?= $idx ?>"
+          required
+        >
+        <span><?= htmlspecialchars($opt) ?></span>
+      </label>
     <?php endforeach; ?>
 
-    <button type="submit" class="btn btn-primary">Submit Quiz</button>
-    <a class="btn" href="<?php echo BASE_URL; ?>/dashboard.php" style="margin-left:8px;">Back</a>
-  </form>
-</section>
-<?php endif; ?>
+  </div>
+  <hr>
+<?php endforeach; ?>
 
-<?php require_once __DIR__ . '/../templates/footer.php'; ?>
+<button class="btn btn-primary">Submit Quiz</button>
+<a class="btn" href="<?= BASE_URL ?>/dashboard.php">Back</a>
+</form>
+</section>
