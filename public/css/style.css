@@ -204,3 +204,197 @@ th{ background:#f7f7fb; }
 }
 .footer-text{ margin:0; font-weight: 800; }
 .footer-subtext{ margin:0; font-size: 12px; color:#444; }
+/* =========================
+   QUIZ OPTIONS STYLE
+   ========================= */
+   
+
+
+
+/* 🚫 OLASI GRID/FLEX EZME */
+.quiz-question *,
+.quiz-option {
+  grid-column: 1 / -1 !important;
+}
+.quiz-question {
+  width: 100%;
+  display: block;
+}
+
+.quiz-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.quiz-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.quiz-option input {
+  margin-top: 4px;
+}
+
+.quiz-option span {
+  text-align: left;
+  white-space: normal;
+}
+/* QUIZ OPTION FIX */
+.quiz-option {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* ❗ SAĞA KAÇIŞI BİTİRİR */
+  gap: 12px;
+
+  width: 100%;
+  text-align: left;
+
+  padding: 12px 14px;
+  margin-bottom: 8px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+
+  cursor: pointer;
+}
+
+/* radio */
+.quiz-option input[type="radio"] {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* yazı */
+.quiz-option span {
+  display: block;
+  text-align: left;
+  white-space: normal;
+  word-break: normal;
+}
+.quiz-option,
+.quiz-option * {
+  float: none !important;
+  text-align: left !important;
+  position: static !important;
+}
+/* =========================
+   MODERN AI THEME
+   ========================= */
+
+   :root {
+    --bg: #f4f6fb;
+    --card: #ffffff;
+  
+    --primary: #4f46e5;
+    --primary-dark: #3730a3;
+  
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+  
+    --border: #e5e7eb;
+  }
+  
+  /* GLOBAL */
+  body {
+    background: var(--bg);
+    color: var(--text-main);
+  }
+  
+  /* HEADER */
+  .site-header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .brand-link {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--primary);
+    text-decoration: none;
+  }
+  
+  .brand-link:hover {
+    color: var(--primary-dark);
+  }
+  
+  /* NAV */
+  .nav-list a {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  
+  .nav-list a:hover {
+    color: var(--primary);
+  }
+  
+  /* CARD */
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  }
+  
+  /* QUIZ */
+  .quiz-question {
+    margin-bottom: 28px;
+  }
+  
+  .quiz-title {
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  
+  .quiz-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  
+  .quiz-option:hover {
+    border-color: var(--primary);
+    background: #eef2ff;
+  }
+  
+  .quiz-option input {
+    margin: 0;
+  }
+  
+  .quiz-option input:checked + span {
+    font-weight: 600;
+    color: var(--primary);
+  }
+  
+  /* BUTTON */
+  .btn-primary {
+    background: var(--primary);
+  }
+  
+  .btn-primary:hover {
+    background: var(--primary-dark);
+  }
+  
+  /* FEEDBACK */
+  .feedback-box {
+    background: #eef2ff;
+    border-left: 4px solid var(--primary);
+    padding: 18px;
+    border-radius: 12px;
+  }
+  
+  .result-score {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--primary);
+  }
