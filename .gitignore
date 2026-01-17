@@ -1,1 +1,9 @@
+# local db
+storage/feedlearn.sqlite
+
+# assets
+assets/
+
+# mac
+.DS_Store
 .DS_Store
