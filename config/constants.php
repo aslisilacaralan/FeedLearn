@@ -1,4 +1,14 @@
 <?php
+// .env loader (simple)
+$envPath = __DIR__ . '/../.env';
+if (file_exists($envPath)) {
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        [$key, $value] = explode('=', $line, 2);
+        putenv(trim($key) . '=' . trim($value));
+    }
+}
 // config/constants.php
 // Proje genel sabitleri
 
@@ -23,28 +33,18 @@ define('ROLE_ADMIN', 'admin');
 $appDebugEnv = getenv('APP_DEBUG') ?: '';
 define(
     'APP_DEBUG',
-    $appDebugEnv === '1' || strtolower($appDebugEnv) === 'true'
+    getenv('APP_DEBUG') === 'true'
 );
+define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: '');
 
-// ================================
-// OPENAI
-// ================================
-$openaiKey = getenv('OPENAI_API_KEY');
 
-// Eğer environment yoksa manuel fallback (geliştirme için)
-if (!$openaiKey) {
-    // ❗ prod'da BURAYA KEY KOYMA
-    $openaiKey = '';
-}
 
-define('GEMINI_API_KEY', 'AIzaSyA-RX03Em3OoWDjhupUHEQepd6R_OYW0uU'); 
 
 // ================================
 // HELPERS
 // ================================
 function redirect(string $path): void
 {
-    // /dashboard.php gibi gelirse düzgün birleştir
     if ($path && $path[0] !== '/') {
         $path = '/' . $path;
     }

@@ -1,75 +1,88 @@
 <?php
+// services/evaluator.php
 
-function evaluate_writing_with_gemini(string $prompt, string $text): array
+require_once __DIR__ . '/gemini_client.php';
+
+function evaluate_writing(string $userText): array
 {
-    if (!defined('GEMINI_API_KEY') || GEMINI_API_KEY === '') {
+    $client = new GeminiClient();
+
+    // Prompt: Yapay zekayı çok sıkı uyarıyoruz
+    $prompt = "
+    Sen bir İngilizce öğretmenisin. Öğrenci yazısı:
+    \"$userText\"
+
+    Görevin:
+    1. Puan ver (0-100)
+    2. Seviye (A1-C2)
+    3. Eksik 2 konu
+    4. Türkçe geri bildirim
+
+    KURALLAR:
+    - SADECE SAF JSON FORMATI VER.
+    - Markdown (```json) KULLANMA.
+    - JSON içinde çift tırnak (\") yerine tek tırnak (') kullan ki format bozulmasın.
+    
+    İSTENEN FORMAT:
+    {
+        \"score_percent\": 80,
+        \"cefr\": \"B1\",
+        \"weak_topics\": [\"Grammar\", \"Vocabulary\"],
+        \"feedback\": \"Guzel bir yazi ancak bazi kelime hatalari var.\"
+    }
+    ";
+
+    try {
+        $rawResponse = $client->generateResponse($prompt, true);
+        
+        // --- 1. Temizlik: Markdown bloklarını sil ---
+        $clean = preg_replace('/```json|```/', '', $rawResponse);
+        
+        // --- 2. Cımbızlama: İlk { ile son } arasını al ---
+        if (preg_match('/\{[\s\S]*\}/', $clean, $matches)) {
+            $clean = $matches[0];
+        }
+
+        // --- 3. Görünmez Karakter Temizliği (BOM, Null vb.) ---
+        // Sadece görünür ASCII karakterleri ve Türkçe karakterleri tut
+        $clean = preg_replace('/[\x00-\x1F\x7F]/u', '', $clean);
+
+        // --- 4. JSON Çözümleme ---
+        $result = json_decode($clean, true);
+
+        // Hata varsa manuel düzeltme dene (Çift tırnak hatası vb.)
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            // Basit bir onarım denemesi: Tırnakları temizle
+            $clean = str_replace(["\r", "\n"], " ", $clean); 
+            $result = json_decode($clean, true);
+        }
+
+        // Hala bozuksa varsayılan değer dön (Site çökmesin!)
+        if (!$result) {
+            error_log("JSON Parse Hatası. Gelen: " . $rawResponse);
+            // Fallback (Yedek) Cevap
+            return [
+                'score_percent' => 50,
+                'cefr' => 'B1',
+                'weak_topics' => ['Genel Değerlendirme'],
+                'feedback' => 'Yazınız alındı. Yapay zeka yanıtı teknik bir sebeple tam işlenemedi ancak yazınız sisteme kaydedildi.' . 
+                              ' (Ham Cevap: ' . substr(strip_tags($rawResponse), 0, 50) . '...)'
+            ];
+        }
+
         return [
-            'score' => 60,
-            'cefr' => 'B1',
-            'weak_topics' => ['configuration'],
-            'feedback' => 'Gemini API key is missing.'
+            'score_percent' => $result['score_percent'] ?? 0,
+            'cefr' => $result['cefr'] ?? 'A1',
+            'weak_topics' => $result['weak_topics'] ?? [],
+            'feedback' => $result['feedback'] ?? 'Geri bildirim oluşturuldu.'
+        ];
+
+    } catch (Exception $e) {
+        return [
+            'score_percent' => 0,
+            'cefr' => 'N/A',
+            'weak_topics' => ['Sistem'],
+            'feedback' => 'Hata: ' . $e->getMessage()
         ];
     }
-
-    $aiPrompt = <<<PROMPT
-You are an English writing examiner.
-
-Return ONLY raw JSON. No markdown. No explanation.
-
-JSON format:
-{
-  "score": number between 40 and 95,
-  "cefr": "A1|A2|B1|B2|C1",
-  "weak_topics": [string],
-  "feedback": string
-}
-
-WRITING PROMPT:
-"$prompt"
-
-STUDENT RESPONSE:
-"$text"
-PROMPT;
-
-    $payload = [
-        "contents" => [[
-            "parts" => [[ "text" => $aiPrompt ]]
-        ]]
-    ];
-
-    $ch = curl_init(
-        "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" . GEMINI_API_KEY
-    );
-
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_TIMEOUT => 30
-    ]);
-
-    $res = curl_exec($ch);
-    curl_close($ch);
-
-    $json = json_decode($res, true);
-    $textOut = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
-
-    $ai = json_decode($textOut, true);
-
-    if (!is_array($ai)) {
-        return [
-            'score' => 65,
-            'cefr' => 'B1',
-            'weak_topics' => ['coherence'],
-            'feedback' => 'AI response could not be parsed. Fallback used.'
-        ];
-    }
-
-    return [
-        'score' => (int)($ai['score'] ?? 65),
-        'cefr' => (string)($ai['cefr'] ?? 'B1'),
-        'weak_topics' => is_array($ai['weak_topics'] ?? null) ? $ai['weak_topics'] : ['grammar'],
-        'feedback' => (string)($ai['feedback'] ?? 'AI feedback.')
-    ];
 }
