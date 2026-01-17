@@ -1,5 +1,9 @@
+# uploads
+public/uploads/audio/
 
-<<<<<<< HEAD
+# temp / debug
+debug_activities.php
+
 # local db
 storage/feedlearn.sqlite
 
@@ -8,7 +12,5 @@ assets/
 
 # mac
 .DS_Store
-=======
-nano .gitignore
->>>>>>> origin/main
 .DS_Store
+
