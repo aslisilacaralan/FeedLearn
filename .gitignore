@@ -1,3 +1,5 @@
+
+<<<<<<< HEAD
 # local db
 storage/feedlearn.sqlite
 
@@ -6,4 +8,7 @@ assets/
 
 # mac
 .DS_Store
+=======
+nano .gitignore
+>>>>>>> origin/main
 .DS_Store
