@@ -107,15 +107,18 @@ Return plain text only.
 PROMPT;
 
         try {
-            $text = gemini_generate_text($prompt, [
-                'temperature' => 0.7,
-                'maxOutputTokens' => 100
-            ]);
+            $client = new GeminiClient();
+            $text = $client->generateResponse($prompt, false); // False = expect plain text
             
+            // Basic sanitation to prevent encoding errors
+            $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+            $text = trim($text);
+
             if ($text) {
                 return $text;
             }
         } catch (Exception $e) {
+            error_log("Quiz Activity AI Error: " . $e->getMessage());
             // Fallback to rules if AI fails
         }
     }
