@@ -7,12 +7,11 @@ class GeminiClient
 {
     private string $apiKey;
     
-    // GÜNCELLENMİŞ MODEL LİSTESİ (Senin anahtarının izin verdikleri)
+    // GÜNCELLENMİŞ MODEL LİSTESİ (API'de mevcut olanlar)
     private array $models = [
-        'gemini-2.5-flash',       // En öncelikli (Hızlı ve Yeni)
-        'gemini-2.0-flash',       // Yedek 1
-        'gemini-flash-latest',    // Yedek 2 (Her zaman en son sürüm)
-        'gemini-2.5-pro'          // Eğer flash modelleri çalışmazsa en zeki model
+        'gemini-2.0-flash',       // V2.0 Flash (Hızlı ve Mevcut)
+        'gemini-flash-latest',    // En son stabil sürüm
+        'gemini-2.0-flash-lite'   // Çok hızlı alternatif
     ];
 
     public function __construct()
@@ -29,14 +28,14 @@ class GeminiClient
         }
     }
 
-    public function generateResponse(string $prompt, bool $jsonFormat = false): string
+    public function generateResponse(string $prompt, bool $jsonFormat = false, ?array $fileData = null): string
     {
         $lastError = '';
 
         // Modelleri sırayla dene
         foreach ($this->models as $model) {
             try {
-                return $this->makeRequest($model, $prompt, $jsonFormat);
+                return $this->makeRequest($model, $prompt, $jsonFormat, $fileData);
             } catch (Exception $e) {
                 // Hata alırsak kaydet ve bir sonraki modele geç
                 $lastError = $e->getMessage();
@@ -47,12 +46,24 @@ class GeminiClient
         throw new Exception("Tüm Gemini modelleri denendi ancak başarısız oldu. Son hata: " . $lastError);
     }
 
-    private function makeRequest(string $model, string $prompt, bool $jsonFormat): string
+    private function makeRequest(string $model, string $prompt, bool $jsonFormat, ?array $fileData = null): string
     {
         // V1beta yerine V1beta kullanmaya devam ediyoruz (Genelde uyumludur)
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . $this->apiKey;
 
-        $parts = [["text" => $prompt]];
+        $parts = [
+            ["text" => $prompt]
+        ];
+
+        // Eğer dosya verisi varsa (Multimodal)
+        if ($fileData && isset($fileData['mimeType']) && isset($fileData['data'])) {
+            $parts[] = [
+                "inlineData" => [
+                    "mimeType" => $fileData['mimeType'],
+                    "data" => $fileData['data'] // Base64 string
+                ]
+            ];
+        }
         
         $payload = [
             "contents" => [["parts" => $parts]],

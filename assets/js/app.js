@@ -27,12 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Add Fade-in Animation to Cards (Staggered)
+    // 2. Add Fade-in Animation to Cards (Staggered) -- REMOVED to prevent visibility issues
+    /*
     const cards = document.querySelectorAll('.card');
     cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.animation = `fadeIn 0.5s ease-out forwards ${index * 0.1}s`;
+        // card.style.opacity = '0'; // CAUSES INVISIBILITY if animation fails
+        // card.style.animation = `fadeIn 0.5s ease-out forwards ${index * 0.1}s`;
     });
+    */
 
     // 3. Table Row Hover Highlight (JS Fallback for complex tables)
     // Most handled by CSS, but we can add click ripples if we want later.
