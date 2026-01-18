@@ -1,0 +1,496 @@
+/* =========================================
+   FEEDLEARN REFERENCE THEME
+   Style: Light, Clean, Mint & Rose
+   Based on User Uploaded Image
+   ========================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+    /* --- PALETTE: REFERENCE MINT/PINK --- */
+
+    /* Backgrounds: Clean Light */
+    --bg-main: #f8fafc;
+    /* Very pale Grey/White */
+    --bg-surface: #ffffff;
+    /* Pure White */
+
+    /* Text */
+    --text-main: #334155;
+    /* Slate 700 */
+    --text-muted: #94a3b8;
+    /* Slate 400 */
+    --text-inverse: #ffffff;
+
+    /* Accents */
+    --primary: #f43f5e;
+    /* Rose 500 (The "Start" Button Color) */
+    --primary-hover: #e11d48;
+    /* Rose 600 */
+
+    --secondary: #2dd4bf;
+    /* Teal/Mint 400 (The Card Borders/Headings) */
+    --secondary-dark: #14b8a6;
+    /* Teal 500 */
+
+    /* Gradients (Subtle) */
+    --grad-bg: linear-gradient(180deg, #f8fafc 0%, #fff1f2 100%);
+    /* Pale background fade */
+
+    /* STATUS COLORS */
+    --success: #2dd4bf;
+    --danger: #f43f5e;
+    --warning: #fbbf24;
+
+    /* BORDERS & SHADOWS */
+    --border-light: #e2e8f0;
+    --radius-sm: 12px;
+    --radius-md: 20px;
+    --radius-lg: 24px;
+    /* Rounded per image */
+
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-float: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+}
+
+/* =========================================
+   RESET & BASE
+   ========================================= */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-main);
+    background-image: var(--grad-bg);
+    background-attachment: fixed;
+    color: var(--text-main);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--secondary-dark);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+a:hover {
+    color: var(--primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-main);
+    margin-top: 0;
+    font-weight: 700;
+}
+
+h2 {
+    font-size: 1.8rem;
+    color: var(--secondary-dark);
+    /* Minty Headings based on "Reports" text in image */
+}
+
+/* Specific section headers */
+.section h2 {
+    color: var(--secondary-dark);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+/* =========================================
+   LAYOUT UTILS
+   ========================================= */
+.section {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 24px;
+}
+
+.grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: flex-start;
+}
+
+.grid>.card {
+    flex: 1 1 300px;
+    max-width: 100%;
+}
+
+.muted {
+    color: var(--text-muted) !important;
+}
+
+/* =========================================
+   COMPONENTS: CARDS (Reference Style)
+   ========================================= */
+.card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+
+    /* Clean White Look */
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-card);
+
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+
+    /* Decoration: Subtle Top Mint Border as seen in "Speaking" card usually */
+    border-top: 4px solid var(--secondary);
+
+    /* FORCE VISIBILITY */
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    display: block !important;
+}
+
+.card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: var(--shadow-float);
+    border-color: #cbd5e1;
+}
+
+.card-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-main);
+}
+
+.card-desc {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-bottom: 28px;
+    line-height: 1.6;
+}
+
+/* =========================================
+   COMPONENTS: BUTTONS (The "Start" Buttons)
+   ========================================= */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 32px;
+    border-radius: 99px;
+    /* Pill */
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    text-decoration: none !important;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+/* Primary: The Rose/Pink Button from Image */
+.btn-primary {
+    background: var(--primary);
+    color: #fff !important;
+    box-shadow: 0 4px 6px rgba(244, 63, 94, 0.2);
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(244, 63, 94, 0.3);
+}
+
+/* Secondary */
+.btn:not(.btn-primary) {
+    background: #f1f5f9;
+    color: var(--text-main);
+    border: 1px solid var(--border-light);
+}
+
+.btn:not(.btn-primary):hover {
+    background: #e2e8f0;
+    color: var(--primary);
+    border-color: #cbd5e1;
+}
+
+.btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #cbd5e1;
+}
+
+/* =========================================
+   HEADER / NAVBAR (Fixed Layout: Logo Left)
+   ========================================= */
+.site-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 16px 0;
+}
+
+.header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: grid;
+    /* GRID LAYOUT CHANGED: Left (Brand) - Next (Nav) - Right (User) */
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 32px;
+    /* Standard spacing */
+}
+
+/* Mobile Toggle */
+.mobile-toggle {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-main);
+}
+
+/* BRAND (Logo) - Moved to Column 1 (LEFT) per standard layouts */
+.brand {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    text-align: left;
+}
+
+.brand-link {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    /* Orange gradient based on image */
+    background: linear-gradient(135deg, #fb7185 0%, #f97316 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-decoration: none !important;
+}
+
+/* NAV - Moved to Column 2 (Right of Logo) */
+.site-nav {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: start;
+    /* Align to start of column (next to logo) */
+    display: flex;
+    gap: 8px;
+}
+
+/* USER - Moved to Column 3 (Far Right) */
+.user-box {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.logout-link {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.logout-link:hover {
+    color: var(--danger);
+}
+
+/* Nav Pills */
+.site-nav a {
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 99px;
+    font-size: 0.95rem;
+}
+
+.site-nav a:hover {
+    color: var(--primary);
+    background: #fff1f2;
+    /* Pale Rose */
+}
+
+.site-nav a.active {
+    background: #f0fdfa;
+    /* Pale Mint */
+    color: var(--secondary-dark);
+    /* Mint Text */
+    font-weight: 700;
+}
+
+/* =========================================
+   TABLES & FORMS
+   ========================================= */
+.table-responsive {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: #fff;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead th {
+    background: #f0fdfa;
+    /* Pale Mint */
+    color: var(--secondary-dark);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    padding: 16px 24px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+}
+
+td {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-main);
+}
+
+tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Inputs */
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+    background: #f8fafc;
+    font-family: inherit;
+    font-size: 1rem;
+    outline: none;
+    transition: 0.2s;
+    margin-top: 5px;
+}
+
+input:focus,
+textarea:focus {
+    border-color: var(--secondary);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.1);
+}
+
+/* Quiz */
+.quiz-option {
+    background: #fff;
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    display: block;
+    transition: 0.2s;
+}
+
+.quiz-option:hover {
+    border-color: var(--secondary);
+    background: #f0fdfa;
+}
+
+/* Feedback */
+.feedback-box {
+    background: #f0fdfa;
+    border-left: 4px solid var(--success);
+    color: #134e4a;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+}
+
+.error {
+    background: #fef2f2;
+    border-left: 4px solid var(--danger);
+    color: #991b1b;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+}
+
+/* =========================================
+   LISTS (Dashboard Tools)
+   ========================================= */
+.list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    /* Increased spacing */
+}
+
+.list li {
+    margin: 0;
+}
+
+.list .btn {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 16px 24px;
+    /* Larger touch target */
+    font-size: 1rem;
+    border-radius: var(--radius-md);
+    /* Match Input radius */
+    background: #fff;
+    /* Explicit white for these tools */
+    border: 1px solid var(--border-light);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+.list .btn:hover {
+    border-color: var(--secondary);
+    background: #f0fdfa;
+    /* Mint tint */
+    transform: translateX(5px);
+    /* Slide right effect */
+    box-shadow: 0 4px 10px rgba(45, 212, 191, 0.1);
+}
+
+/* =========================================
+   MOBILE
+   ========================================= */
+@media (max-width: 768px) {
+    .mobile-toggle {
+        display: block;
+    }
+
+    .site-nav {
+        display: none;
+    }
+
+    .header-inner {
+        grid-template-columns: auto 1fr auto;
+    }
+}

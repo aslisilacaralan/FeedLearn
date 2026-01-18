@@ -1,3 +1,11 @@
+# logs & temp
+logs/
+FETCH_HEAD
+debug_gemini.php
+tests/
+
+# mac
+.DS_Store
 # uploads
 public/uploads/audio/
 
